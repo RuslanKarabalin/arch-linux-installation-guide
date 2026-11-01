@@ -167,6 +167,9 @@ nvim /etc/default/grub
 
 ```bash
 grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB
+```
+
+```bash
 grub-mkconfig -o /boot/grub/grub.cfg
 ```
 
@@ -174,7 +177,13 @@ grub-mkconfig -o /boot/grub/grub.cfg
 
 ```bash
 exit
+```
+
+```bash
 umount -R /mnt
+```
+
+```bash
 shutdown now
 ```
 
@@ -192,7 +201,13 @@ nmtui
 
 ```bash
 useradd -m -g users -G wheel -s /bin/zsh <USERNAME>
+```
+
+```bash
 passwd <USERNAME>
+```
+
+```bash
 EDITOR=nvim visudo
 ```
 
@@ -240,9 +255,7 @@ pacman -S bluez bluez-utils \
     git eza bat \
     inxi htop tree \
     ripgrep fastfetch \
-    unzip unrar openssh \
-    systemd-resolvconf \
-    wireguard-tools
+    unzip unrar openssh
 ```
 
 ### Enable zram
@@ -263,7 +276,13 @@ nvim /etc/systemd/zram-generator.conf
 
 ```bash
 systemctl daemon-reload
+```
+
+```bash
 systemctl enable --now systemd-zram-setup@zram0.service
+```
+
+```bash
 zramctl
 ```
 
@@ -285,6 +304,9 @@ systemctl enable bluetooth
 
 ```bash
 systemctl enable fstrim.timer
+```
+
+```bash
 fstrim -v /
 ```
 
@@ -373,7 +395,13 @@ systemctl enable sddm
 
 ```bash
 git clone https://aur.archlinux.org/yay.git
+```
+
+```bash
 cd yay
+```
+
+```bash
 makepkg -si
 ```
 
@@ -382,12 +410,15 @@ makepkg -si
 ```bash
 sudo pacman -S docker \
     docker-compose \
-    docker-buildx \
-    lazydocker
+    docker-buildx
 ```
 
 ```bash
 sudo systemctl enable docker.socket
+```
+
+```bash
+sudo systemctl start docker.socket
 ```
 
 ```bash
@@ -396,85 +427,19 @@ sudo usermod -aG docker <USERNAME>
 
 ```bash
 newgrp docker
+```
+
+```bash
 docker run hello-world
 ```
 
 ### some gui apps
 
 ```bash
-yay -S gimp \
-    firefox \
-    neovim-git \
-    obs-studio \
+yay -S obs-studio \
     qbittorrent \
     google-chrome \
-    telegram-desktop \
     vlc vlc-plugin-ffmpeg \
     visual-studio-code-bin \
     v4l2loopback-dkms v4l2loopback-utils
-```
-
-### nvidia
-
-```bash
-sudo pacman -S nvidia-dkms \
-    nvidia-utils \
-    nvidia-prime \
-    nvidia-settings
-```
-
-```bash
-sudo nvim /etc/default/grub
-```
-
-> write
->
-> ```plaintext
-> GRUB_CMDLINE_LINUX_DEFAULT="... nvidia-drm.modeset=1 nvidia-drm.fbdev=1"
-> ```
-
-```bash
-sudo grub-mkconfig -o /boot/grub/grub.cfg
-```
-
-```bash
-sudo nvim /etc/mkinitcpio.conf
-```
-
-> write
->
-> ```plaintext
-> MODULES=(nvidia nvidia_modeset nvidia_uvm nvidia_drm)
-> remove kms from HOOKS=()
-> ```
-
-```bash
-sudo mkinitcpio -P
-```
-
-```bash
-sudo mkdir -p /etc/pacman.d/hooks/
-sudo nvim /etc/pacman.d/hooks/nvidia.hook
-```
-
-> write
->
-> ```plaintext
-> [Trigger]
-> Operation=Install
-> Operation=Upgrade
-> Operation=Remove
-> Type=Package
-> Target=nvidia
-> Target=linux
-> 
-> [Action]
-> Depends=mkinitcpio
-> When=PostTransaction
-> NeedsTargets
-> Exec=/bin/sh -c 'while read -r trg; do case $trg in linux) exit 0; esac; done; /usr/bin/mkinitcpio -P'
-> ```
-
-```bash
-sudo reboot now
 ```
