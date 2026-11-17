@@ -2,14 +2,18 @@
 
 ## Installation
 
-### Connect to internet with iwctl
+### Connect to the internet with iwctl
 
 ```bash
-iwctl
-station wlan0 scan
-station wlan0 connect <WIFIID>
-station wlan0 show
-exit
+iwctl station wlan0 scan
+```
+
+```bash
+iwctl station wlan0 connect <WIFIID>
+```
+
+```bash
+iwctl station wlan0 show
 ```
 
 ### Update the system clock
@@ -20,9 +24,12 @@ timedatectl
 
 ### Partition the disks
 
+Disk partitioning with complete data erasure
+
 ```bash
 cfdisk -z /dev/nvme0n1
 ```
+
 > choose GPT
 >
 > ```plaintext
@@ -38,22 +45,13 @@ mkdir -p /mnt/boot/efi
 mount /dev/nvme0n1p1 /mnt/boot/efi
 ```
 
-### Setup pacman on live USB
-
-```bash
-nano /etc/pacman.conf
-```
-
-> uncomment
->
-> ```plaintext
-> Color
-> ParallelDownloads = 5
-> ```
-
 ### vconsole
 
-In some cases, need to
+Create `vconsole.conf` before `pacstrap`
+
+```bash
+mkdir -p /mnt/etc
+```
 
 ```bash
 nano /mnt/etc/vconsole.conf
@@ -62,7 +60,7 @@ nano /mnt/etc/vconsole.conf
 > write
 >
 > ```plaintext
-> # KEYMAP=us
+> KEYMAP=us
 > ```
 
 ### Install packages
@@ -76,27 +74,36 @@ pacstrap -K /mnt base \
     grub efibootmgr \
     zram-generator \
     networkmanager \
-    sudo neovim zsh
+    neovim zsh
 ```
 
-> fstab
->
-> ```bash
-> genfstab -U /mnt >> /mnt/etc/fstab
-> ```
+### Generate fstab
 
-> chroot
->
-> ```bash
-> arch-chroot /mnt
-> ```
+```bash
+genfstab -U /mnt >> /mnt/etc/fstab
+```
+
+### Chroot
+
+```bash
+arch-chroot /mnt
+```
 
 ### Timezone setup
 
 ```bash
 ln -sf /usr/share/zoneinfo/<REGION>/<CITY> /etc/localtime
+```
+
+```bash
 hwclock --systohc
-timedatectl set-ntp true
+```
+
+```bash
+systemctl enable systemd-timesyncd
+```
+
+```bash
 timedatectl status
 ```
 
@@ -141,11 +148,11 @@ nvim /etc/hostname
 systemctl enable NetworkManager
 ```
 
-> initramfs
->
-> ```bash
-> mkinitcpio -P
-> ```
+### Initramfs
+
+```bash
+mkinitcpio -P
+```
 
 ### Setup root password
 
@@ -154,16 +161,6 @@ passwd
 ```
 
 ### Setup grub
-
-```bash
-nvim /etc/default/grub
-```
-
-> change
->
-> ```plaintext
-> GRUB_TIMEOUT=0
-> ```
 
 ```bash
 grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB
@@ -191,7 +188,7 @@ shutdown now
 
 Login as `root`
 
-### Connect to internet
+### Connect to the internet
 
 ```bash
 nmtui
@@ -200,7 +197,7 @@ nmtui
 ### Setup user
 
 ```bash
-useradd -m -g users -G wheel -s /bin/zsh <USERNAME>
+useradd -m -G wheel -s /bin/zsh <USERNAME>
 ```
 
 ```bash
@@ -227,7 +224,6 @@ nvim /etc/pacman.conf
 >
 > ```plaintext
 > Color
-> ParallelDownloads = 5
 > ...
 > [multilib]
 > Include = ...
@@ -243,6 +239,7 @@ pacman -Syu
 pacman -S bluez bluez-utils \
     gvfs gvfs-mtp \
     gvfs-gphoto2 \
+    sof-firmware \
     pipewire wireplumber \
     pipewire-audio pipewire-alsa \
     pipewire-pulse pipewire-jack \
@@ -279,7 +276,7 @@ systemctl daemon-reload
 ```
 
 ```bash
-systemctl enable --now systemd-zram-setup@zram0.service
+systemctl start systemd-zram-setup@zram0.service
 ```
 
 ```bash
@@ -288,63 +285,23 @@ zramctl
 
 ### Enable base services
 
-#### resolvconf
-
-```bash
-systemctl enable systemd-resolved
-```
-
 #### bluetooth
 
 ```bash
-systemctl enable bluetooth
+systemctl enable --now bluetooth
 ```
 
 #### fstrim
 
 ```bash
-systemctl enable fstrim.timer
+systemctl enable --now fstrim.timer
 ```
 
 ```bash
 fstrim -v /
 ```
 
-### Desktop Environment
-
-#### Hyprland
-
-```bash
-pacman -S hyprland \
-    hyprlock hypridle \
-    waybar wofi mako \
-    xdg-desktop-portal-hyprland \
-    polkit-kde-agent \
-    archlinux-xdg-menu xdg-user-dirs \
-    network-manager-applet \
-    brightnessctl \
-    blueman wl-clipboard cliphist \
-    grim slurp swappy \
-    hyprpaper \
-    pavucontrol playerctl \
-    imv mpv \
-    zathura zathura-pdf-mupdf \
-    thunar thunar-volman \
-    thunar-archive-plugin \
-    sddm \
-    qt5-wayland qt6-wayland \
-    kwallet dolphin ark \
-    gtk3 gtk4 \
-    papirus-icon-theme
-```
-
-##### Enable SDDM
-
-```bash
-systemctl enable sddm
-```
-
-#### GNOME
+### GNOME
 
 ```bash
 pacman -S gdm gnome-shell \
@@ -360,36 +317,13 @@ pacman -S gdm gnome-shell \
     xdg-desktop-portal-gnome
 ```
 
-##### Enable GDM
+#### Enable GDM
 
 ```bash
-systemctl enable gdm
+systemctl enable --now gdm
 ```
 
-#### KDE Plasma
-
-```bash
-pacman -S plasma-desktop
-    plasma-x11-session \
-    sddm dolphin ark \
-    spectacle \
-    bluedevil \
-    plasma-pa plasma-nm \
-    powerdevil \
-    kde-gtk-config \
-    breeze-gtk \
-    xdg-desktop-portal \
-    xdg-desktop-portal-kde \
-    papirus-icon-theme
-```
-
-##### Enable SDDM
-
-```bash
-systemctl enable sddm
-```
-
-## Extra
+## After logging in as \<USERNAME\>
 
 ### yay
 
@@ -414,11 +348,7 @@ sudo pacman -S docker \
 ```
 
 ```bash
-sudo systemctl enable docker.socket
-```
-
-```bash
-sudo systemctl start docker.socket
+sudo systemctl enable --now docker.socket
 ```
 
 ```bash
@@ -433,13 +363,20 @@ newgrp docker
 docker run hello-world
 ```
 
-### some gui apps
+### GUI apps
+
+From the official repositories
 
 ```bash
-yay -S obs-studio \
+sudo pacman -S obs-studio \
     qbittorrent \
-    google-chrome \
     vlc vlc-plugin-ffmpeg \
-    visual-studio-code-bin \
     v4l2loopback-dkms v4l2loopback-utils
+```
+
+From AUR
+
+```bash
+yay -S google-chrome \
+    visual-studio-code-bin
 ```
